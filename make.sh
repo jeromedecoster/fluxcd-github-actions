@@ -51,21 +51,44 @@ install-fluxctl() {
     fi
 }
 
+# install eksctl if missing (no update)
+install-eksctl() {
+    if [[ -z $(which eksctl) ]]
+    then
+        log install eksctl
+        warn warn sudo is required
+        sudo wget -q -O - https://api.github.com/repos/weaveworks/eksctl/releases \
+            | jq --raw-output 'map( select(.prerelease==false) | .assets[].browser_download_url ) | .[]' \
+            | grep inux \
+            | head -n 1 \
+            | wget -q --show-progress -i - -O - \
+            | sudo tar -xz -C /usr/local/bin
+
+        # bash completion
+        [[ -z $(grep eksctl_init_completion ~/.bash_completion 2>/dev/null) ]] \
+            && eksctl completion bash >> ~/.bash_completion
+    else
+        log skip eksctl already installed
+    fi
+}
+
 # install kubectl if missing (no update)
-# install-kubectl() {
-#     if [[ -z $(which kubectl) ]]
-#     then
-#         log install eksctl
-#         warn warn sudo is required
-#         VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-#         cd /usr/local/bin
-#         sudo curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
-#             --progress-bar \
-#             --location \
-#             --remote-name
-#         sudo chmod +x kubectl
-#     fi
-# }
+install-kubectl() {
+    if [[ -z $(which kubectl) ]]
+    then
+        log install eksctl
+        warn warn sudo is required
+        VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+        cd /usr/local/bin
+        sudo curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
+            --progress-bar \
+            --location \
+            --remote-name
+        sudo chmod +x kubectl
+    else
+        log skip kubectl already installed
+    fi
+}
 
 
 create-env() {
@@ -147,7 +170,8 @@ create-env() {
 # install eksctl + kubectl, create aws user + s3 bucket
 setup() {
     install-fluxctl
-    # install-kubectl
+    install-eksctl
+    install-kubectl
     create-env
 }
 
@@ -172,6 +196,54 @@ run() {
         --name $PROJECT_NAME \
         --publish 3000:3000 \
         $PROJECT_NAME
+}
+
+cluster-create() { # create the EKS cluster
+    # check if cluster already exists (return something if the cluster exists, otherwise return nothing)
+    local exists=$(aws eks describe-cluster \
+        --name $PROJECT_NAME \
+        --profile $AWS_PROFILE \
+        --region $AWS_REGION \
+        2>/dev/null)
+        
+    [[ -n "$exists" ]] && { error abort cluster $PROJECT_NAME already exists; return; }
+
+    # create a cluster named $PROJECT_NAME
+    log create eks cluster $PROJECT_NAME
+
+    eksctl create cluster \
+        --name $PROJECT_NAME \
+        --region $AWS_REGION \
+        --managed \
+        --node-type t2.small \
+        --nodes 1 \
+        --profile $AWS_PROFILE
+}
+
+# k8s-template() {
+#     source "$dir/.env"
+#     sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
+#         --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
+#         --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+#         --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g" \
+#         --expression "s|{{AWS_REGION}}|$AWS_REGION|g" \
+#         --expression "s|{{WEBSITE_PORT}}|$WEBSITE_PORT|g" \
+#         $1
+# }
+
+# cluster-deploy() { # deploy services to EKS
+#     cd "$dir/k8s"
+#     for f in namespace deployment service
+#     do
+#         k8s-template "$f.yaml" | kubectl apply --filename - 
+#     done
+# }
+
+cluster-delete() { # delete the EKS cluster
+    eksctl delete cluster \
+        --name $PROJECT_NAME \
+        --region $AWS_REGION \
+        --profile $AWS_PROFILE
 }
 
 # remove the running container

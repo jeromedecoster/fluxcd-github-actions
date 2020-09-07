@@ -15,3 +15,9 @@ run: # run the built production image
 
 rm: # remove the running container built production
 	./make.sh rm
+
+cluster-create: # create the EKS cluster
+	./make.sh cluster-create
+
+cluster-delete: # delete the EKS cluster
+	./make.sh cluster-delete
