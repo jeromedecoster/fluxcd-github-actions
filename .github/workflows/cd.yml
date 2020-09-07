@@ -1,35 +1,14 @@
 name: env variables
 on: push
 env:
-  WF_ENV: avaliable to all jobs
+    WF_ENV: avaliable to all jobs
 
 jobs:
-  log-env:
-    runs-on: ubuntu-latest
-    env:
-      JOB_ENV: avaliable to all jobs
-    steps:
-      - name: log Env varibles
+    log-env:
+        runs-on: ubuntu-latest
         env:
-          STEPS_ENV: avaliable to local jobs
-        run: |
-          echo "WF_ENV: ${WF_ENV}"
-          echo "JOB_ENV: ${JOB_ENV}"
-          echo "STEPS_ENV: ${STEPS_ENV}"
-      - name: log Env varibles2
-        env:
-          STEPS_ENV: avaliable to local jobs
-        run: |
-          echo "WF_ENV: ${WF_ENV}"
-          echo "JOB_ENV: ${JOB_ENV}"
-          echo "STEPS_ENV: ${STEPS_ENV}"
-  log-defult-env:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Defult Env variables
-        run: |
-          echo "WF_ENV: ${WF_ENV}"
-          echo "JOB_ENV: ${JOB_ENV}"
-          echo "STEPS_ENV: ${STEPS_ENV}"
-          echo "HOME: ${HOME}" 
-          echo "GITHUB_WORKFLOW: ${GITHUB_WORKFLOW}"
+            JOB_ENV: avaliable to all jobs
+        steps:
+            run: |
+                echo "WF_ENV: ${WF_ENV}"
+                echo "JOB_ENV: ${JOB_ENV}"
