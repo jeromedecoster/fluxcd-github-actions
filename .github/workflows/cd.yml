@@ -32,8 +32,9 @@ jobs:
         
         - name: Test Kubectl
           run: |
-            kubectl get ns
-            
+            echo $ KUBECONFIG
+            # kubectl get ns
+
         # - name: Trigger deploy
         #   uses: Consensys/kubernetes-action@master
         #   env:
