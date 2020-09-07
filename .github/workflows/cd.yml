@@ -15,4 +15,4 @@ jobs:
 
         - name: Sed
             run: |
-                echo "${ AWS_REGION }"
+                echo "${AWS_REGION}"
