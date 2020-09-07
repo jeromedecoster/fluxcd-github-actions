@@ -20,6 +20,10 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
             
+        - name: test
+          run: |
+            cat ~/.aws/config 
+
         - uses: azure/setup-kubectl@v1
         - uses: azure/k8s-set-context@v1
           with:
