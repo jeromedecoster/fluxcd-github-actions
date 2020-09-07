@@ -151,297 +151,36 @@ setup() {
     create-env
 }
 
-# local development with docker-compose
-# dev() {
-#     docker-compose \
-#         --file docker-compose.dev.yml \
-#         --project-name compose_gallery_kubernetes_dev \
-#         --env-file .env \
-#         up \
-#         # --remove-orphans \
-#         # --force-recreate \
-#         # --build
-# }
+# build the production image
+build() {
+    cd "$dir/site"
+    VERSION=$(jq --raw-output '.version' package.json)
+    log build $PROJECT_NAME:$VERSION
+    docker image build \
+        --tag $PROJECT_NAME:latest \
+        --tag $PROJECT_NAME:$VERSION \
+        .
+}
 
-# create-ecr-build-push-image() {
-#     [[ -z "$1" ]] && { warn abort an image name is required; return; }
+# run the latest built production image on localhost
+run() {
+    [[ -n $(docker ps --format '{{.Names}}' | grep $PROJECT_NAME) ]] \
+        && { error error container already exists; return; }
+    log run $PROJECT_NAME on http://localhost:3000
+    docker run \
+        --detach \
+        --name $PROJECT_NAME \
+        --publish 3000:3000 \
+        $PROJECT_NAME
+}
 
-#     # create ECR repository
-#     local repo=$(aws ecr describe-repositories \
-#         --repository-names $1 \
-#         --region $AWS_REGION \
-#         --profile $AWS_PROFILE \
-#         2>/dev/null)
-#     if [[ -z "$repo" ]]
-#     then
-#         log ecr create-repository for $1
-#         aws ecr create-repository \
-#             --repository-name $1 \
-#             --region $AWS_REGION \
-#             --profile $AWS_PROFILE
-#     fi
-
-#     # get repository URI
-#     REPOSITORY_URI=$(aws ecr describe-repositories \
-#         --query "repositories[?repositoryName == '$1'].repositoryUri" \
-#         --region $AWS_REGION \
-#         --profile $AWS_PROFILE \
-#         --output text)
-#     log REPOSITORY_URI $REPOSITORY_URI
-
-#     # root account id
-#     ACCOUNT_ID=$(aws sts get-caller-identity \
-#         --query 'Account' \
-#         --profile $AWS_PROFILE \
-#         --output text)
-#     log ACCOUNT_ID $ACCOUNT_ID
-    
-#     # add login data into /home/$USER/.docker/config.json (create or update authorization token)
-#     aws ecr get-login-password \
-#         --region $AWS_REGION \
-#         --profile $AWS_PROFILE \
-#         | docker login \
-#         --username AWS \
-#         --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-
-#     # build, tag and push storage
-#     cd "$dir/$1"
-#     VERSION=$(jq --raw-output '.version' package.json)
-#     log build $1:$VERSION
-#     docker image build \
-#         --tag $1:latest \
-#         --tag $1:$VERSION \
-#         .
-
-#     docker tag $1:latest $REPOSITORY_URI:latest
-#     docker tag $1:latest $REPOSITORY_URI:$VERSION
-#     log push $REPOSITORY_URI:$VERSION
-#     docker push $REPOSITORY_URI:latest
-#     docker push $REPOSITORY_URI:$VERSION
-# }
-
-# # build production images and push to ECR
-# build-push() {
-#     create-ecr-build-push-image storage
-#     create-ecr-build-push-image convert
-#     create-ecr-build-push-image website
-# }
-
-# # run production images locally
-# prod() {
-#     docker-compose \
-#         --project-name compose_gallery_kubernetes_prod \
-#         up
-# }
-
-# cluster-create() { # create the EKS cluster
-#     # check if cluster already exists (return something if the cluster exists, otherwise return nothing)
-#     local exists=$(aws eks describe-cluster \
-#         --name $PROJECT_NAME \
-#         --profile $AWS_PROFILE \
-#         --region $AWS_REGION \
-#         2>/dev/null)
-        
-#     [[ -n "$exists" ]] && { error abort cluster $PROJECT_NAME already exists; return; }
-
-#     # create a cluster named $PROJECT_NAME
-#     log create eks cluster $PROJECT_NAME
-
-#     eksctl create cluster \
-#         --name $PROJECT_NAME \
-#         --region $AWS_REGION \
-#         --managed \
-#         --node-type t2.small \
-#         --nodes 1 \
-#         --profile $AWS_PROFILE
-# }
-
-# k8s-template() {
-#     source "$dir/.env"
-#     sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
-#         --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
-#         --expression "s|{{AWS_S3_BUCKET}}|$AWS_S3_BUCKET|g" \
-#         --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
-#         --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g" \
-#         --expression "s|{{AWS_REGION}}|$AWS_REGION|g" \
-#         --expression "s|{{STORAGE_PORT}}|$STORAGE_PORT|g" \
-#         --expression "s|{{CONVERT_PORT}}|$CONVERT_PORT|g" \
-#         --expression "s|{{WEBSITE_PORT}}|$WEBSITE_PORT|g" \
-#         $1
-# }
-
-# cluster-deploy() { # deploy services to EKS
-#     cd "$dir/k8s"
-#     for f in namespace secret \
-#                 storage-deployment storage-service \
-#                 convert-deployment convert-service \
-#                 website-deployment website-service
-#     do
-#         k8s-template "$f.yaml" | kubectl apply --filename - 
-#     done
-# }
-
-# cluster-elb() { # get the cluster ELB URI
-#     kubectl get svc \
-#         --namespace $PROJECT_NAME \
-#         --output jsonpath="{.items[?(@.metadata.name=='website')].status.loadBalancer.ingress[].hostname}"
-# }
-
-# cluster-log-convert() { # get the convert logs
-#     kubectl logs \
-#         --namespace gallery-kubernetes \
-#         --selector app=convert \
-#         --tail=1000
-# }
-
-# cluster-delete() { # delete the EKS cluster
-#     eksctl delete cluster \
-#         --name $PROJECT_NAME \
-#         --region $AWS_REGION \
-#         --profile $AWS_PROFILE
-# }
-
-# # storage service local development (on current machine, by calling npm script directly)
-# storage-dev() {
-#     cd storage
-#     npm run dev
-# }
-
-# # storage service local development with docker
-# storage-dev-docker() {
-#     source "$dir/.env"
-#     cd storage
-#     docker image build \
-#         --file Dockerfile.dev \
-#         --tag storage-dev:latest \
-#         .
-
-#     docker run \
-#         --env-file=../.env \
-#         --volume "$(pwd):/app" \
-#         --publish $STORAGE_PORT:$STORAGE_PORT \
-#         storage-dev:latest
-# }
-
-# # run storage service tests (on current machine, by calling npm script directly)
-# storage-test() {
-#     cd storage
-#     DEBUG=storage npm test
-# }
-
-# # run storage service tests with docker
-# storage-test-docker() {
-#     cd storage
-#     docker image build \
-#         --file Dockerfile.test \
-#         --tag storage-test:latest \
-#         .
-
-#     docker run \
-#         --env-file=../.env \
-#         storage-test:latest
-# }
-
-# # build then run storage service with docker (with .env vars, just to test if it runs correctly)
-# storage-prod-docker() {
-#     source "$dir/.env"
-#     cd storage
-#     VERSION=$(jq --raw-output '.version' package.json)
-#     docker image build \
-#         --tag storage-prod:latest \
-#         --tag storage-prod:$VERSION \
-#         .
-
-#     docker run \
-#         --env-file=../.env \
-#         --publish $STORAGE_PORT:$STORAGE_PORT \
-#         storage-prod:latest
-# }
-
-
-# # convert service local development (on current machine, by calling npm script directly)
-# convert-dev() {
-#     cd convert
-#     npm run dev
-# }
-
-# # convert service local development with docker
-# convert-dev-docker() {
-#     source "$dir/.env"
-#     cd convert
-#     docker image build \
-#         --file Dockerfile.dev \
-#         --tag convert-dev:latest \
-#         .
-
-#     docker run \
-#         --env-file=../.env \
-#         --volume "$(pwd):/app" \
-#         --publish $CONVERT_PORT:$CONVERT_PORT \
-#         convert-dev:latest
-# }
-
-# # run convert service tests (on current machine, by calling npm script directly)
-# convert-test() {
-#     cd convert
-#     DEBUG=convert npm test
-# }
-
-# # run convert service tests with docker
-# storage-test-docker() {
-#     cd convert
-#     docker image build \
-#         --file Dockerfile.test \
-#         --tag convert-test:latest \
-#         .
-
-#     docker run \
-#         --env-file=../.env \
-#         convert-test:latest
-# }
-
-# # build then run convert service with docker (with .env vars, just to test if it runs correctly)
-# convert-prod-docker() {
-#     source "$dir/.env"
-#     cd convert
-#     VERSION=$(jq --raw-output '.version' package.json)
-#     docker image build \
-#         --tag convert-prod:latest \
-#         --tag convert-prod:$VERSION \
-#         .
-#         # --build-arg CONVERT_PORT=$CONVERT_PORT \
-
-#     docker run \
-#         --env-file=../.env \
-#         --publish $CONVERT_PORT:$CONVERT_PORT \
-#         convert-prod:latest
-# }
-
-# # website service local development (on current machine, by calling npm script directly)
-# website-dev() {
-#     cd website
-#     npm run dev
-# }
-
-# # website service local development with docker
-# website-dev-docker() {
-#     source "$dir/.env"
-#     cd website
-#     docker image build \
-#         --file Dockerfile.dev \
-#         --tag website-dev:latest \
-#         .
-
-#     # Warn: --network host is required to connect to other services running on localhost
-#     # https://docs.docker.com/network/network-tutorial-host/
-#     docker run \
-#         --env-file=../.env \
-#         --volume "$(pwd):/app" \
-#         --network host \ 
-#         --publish $WEBSITE_PORT:$WEBSITE_PORT \
-#         website-dev:latest
-# }
-
+# remove the running container
+rm() {
+    [[ -z $(docker ps --format '{{.Names}}' | grep $PROJECT_NAME) ]]  \
+        && { warn warn no running container found; return; }
+    docker container rm \
+        --force $PROJECT_NAME
+}
 
 # if `$1` is a function, execute it. Otherwise, print usage
 # compgen -A 'function' list all declared functions
