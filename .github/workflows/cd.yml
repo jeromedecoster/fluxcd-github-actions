@@ -13,14 +13,14 @@ jobs:
         - name: Clone
           uses: actions/checkout@v2
 
-        # - name: Configure AWS credentials
-        #   uses: aws-actions/configure-aws-credentials@v1
-        #   with:
-        #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        #     aws-region: ${{ env.AWS_REGION }}
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.AWS_REGION }}
             
-        - uses: azure/setup-kubectl@v1
+        # - uses: azure/setup-kubectl@v1
         
 
 
@@ -33,7 +33,7 @@ jobs:
         - name: Deploy to EKS
           uses: Consensys/kubernetes-action@master
           with:
-              args: get ns
+              args: kubectl config current-context
           env:
             KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
