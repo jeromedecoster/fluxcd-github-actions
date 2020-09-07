@@ -1,4 +1,4 @@
-ame: env varibles
+name: env variables
 on: push
 env:
   WF_ENV: avaliable to all jobs
