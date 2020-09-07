@@ -33,6 +33,7 @@ jobs:
         - name: Test Kubectl
           run: |
             echo $KUBECONFIG
+            cat $KUBECONFIG
             # kubectl get ns
 
         # - name: Trigger deploy
