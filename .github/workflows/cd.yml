@@ -33,8 +33,9 @@ jobs:
 
         - name: Test Kubectl
           run: |
+             printenv
              kubectl get ns
-             
+
         # - uses: azure/k8s-deploy@v1
         #   env:
         #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
