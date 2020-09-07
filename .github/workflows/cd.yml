@@ -1,18 +1,35 @@
-name: cd
-
-on: [push, pull_request]
-
-env: 
-    ECR_REPOSITORY: "fluxcd-github-actions"
-    AWS_REGION: "eu-west-3"
+ame: env varibles
+on: push
+env:
+  WF_ENV: avaliable to all jobs
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Clone
-            uses: actions/checkout@v2
-
-        - name: Sed
-            run: |
-                echo "${AWS_REGION}"
+  log-env:
+    runs-on: ubuntu-latest
+    env:
+      JOB_ENV: avaliable to all jobs
+    steps:
+      - name: log Env varibles
+        env:
+          STEPS_ENV: avaliable to local jobs
+        run: |
+          echo "WF_ENV: ${WF_ENV}"
+          echo "JOB_ENV: ${JOB_ENV}"
+          echo "STEPS_ENV: ${STEPS_ENV}"
+      - name: log Env varibles2
+        env:
+          STEPS_ENV: avaliable to local jobs
+        run: |
+          echo "WF_ENV: ${WF_ENV}"
+          echo "JOB_ENV: ${JOB_ENV}"
+          echo "STEPS_ENV: ${STEPS_ENV}"
+  log-defult-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Defult Env variables
+        run: |
+          echo "WF_ENV: ${WF_ENV}"
+          echo "JOB_ENV: ${JOB_ENV}"
+          echo "STEPS_ENV: ${STEPS_ENV}"
+          echo "HOME: ${HOME}" 
+          echo "GITHUB_WORKFLOW: ${GITHUB_WORKFLOW}"
