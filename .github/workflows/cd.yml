@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env: 
     ECR_REPOSITORY: "fluxcd-github-actions"
-    AWS_REGION: "eu-west-3"
+    AWS_REGION: eu-west-3
 
 jobs:
     build:
