@@ -7,8 +7,8 @@ jobs:
     log-env:
         runs-on: ubuntu-latest
         env:
-            JOB_ENV: avaliable to all jobs
+                    JOB_ENV: avaliable to all jobs
         steps:
-            run: |
-                echo "WF_ENV: ${WF_ENV}"
-                echo "JOB_ENV: ${JOB_ENV}"
+            - name: test
+              run: | 
+                echo $JOB_ENV
