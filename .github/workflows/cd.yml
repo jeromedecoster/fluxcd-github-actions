@@ -22,26 +22,18 @@ jobs:
             
         - uses: azure/setup-kubectl@v1
         
-        - name: which
-          run: |
-            which kubectl
 
-        - name: config
-          run: |
-            echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig
-            export KUBECONFIG=./kubeconfig.yml
-            cat ./kubeconfig.yml
-            kubectl get ns
 
-        # - uses: azure/k8s-set-context@v1
-        #   with:
-        #     method: kubeconfig
-        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+        - uses: azure/k8s-set-context@v1
+          with:
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
         
-        # - name: Test Kubectl
-        #   run: |
-        #     kubectl get ns
+        - name: Test Kubectl
+          run: |
+            kubectl get ns
+            
         # - name: Trigger deploy
         #   uses: Consensys/kubernetes-action@master
         #   env:
