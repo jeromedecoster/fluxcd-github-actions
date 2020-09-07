@@ -20,12 +20,21 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
             
-        - name: Trigger deploy
-          uses: Consensys/kubernetes-action@master
-          env:
-            KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        - uses: azure/setup-kubectl@v1
+        - uses: azure/k8s-set-context@v1
           with:
-            args: apply -f k8s/namespace.yaml
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+
+        - name: Test Kubectl
+          run: |
+            kubectl get ns
+        # - name: Trigger deploy
+        #   uses: Consensys/kubernetes-action@master
+        #   env:
+        #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        #   with:
+        #     args: apply -f k8s/namespace.yaml
 
 
         # - name: Login to Amazon ECR
