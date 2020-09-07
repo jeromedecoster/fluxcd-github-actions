@@ -1,0 +1,14 @@
+name: cd
+
+on: [push, pull_request]
+
+env: 
+    ECR_REPOSITORY: "fluxcd-github-actions"
+    AWS_REGION: "eu-west-3"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Clone
+        uses: actions/checkout@v2
