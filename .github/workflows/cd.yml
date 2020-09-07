@@ -33,11 +33,8 @@ jobs:
 
         - name: Test Kubectl
           run: |
-             echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig
-             export KUBECONFIG="kubeconfig
              kubectl get ns
-             kubectl apply k8s/namespace.yaml
-             kubectl get ns
+             
         # - uses: azure/k8s-deploy@v1
         #   env:
         #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
