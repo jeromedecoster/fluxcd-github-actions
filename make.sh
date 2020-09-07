@@ -239,6 +239,12 @@ cluster-create() { # create the EKS cluster
 #     done
 # }
 
+cluster-elb() { # get the cluster ELB URI
+    kubectl get svc \
+        --namespace $PROJECT_NAME \
+        --output jsonpath="{.items[?(@.metadata.name=='website')].status.loadBalancer.ingress[].hostname}"
+}
+
 cluster-delete() { # delete the EKS cluster
     eksctl delete cluster \
         --name $PROJECT_NAME \
