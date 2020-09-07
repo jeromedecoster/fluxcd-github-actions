@@ -20,36 +20,34 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
           
-        - name: Login to Amazon ECR
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v1
+        # - name: Login to Amazon ECR
+        #   id: login-ecr
+        #   uses: aws-actions/amazon-ecr-login@v1
 
         - uses: azure/setup-kubectl@v1
         
-
-
         - uses: azure/k8s-set-context@v1
           with:
             method: kubeconfig
             kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
         
-        - uses: Azure/k8s-deploy@v1
-          env:
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          with:
-            namespace: 'default'
-            manifests: |
-                k8s/namespace.yaml
-            images: '$ECR_REGISTRY/$ECR_REPOSITORY:latest'          
-            kubectl-version: 'latest'
-
-        # - name: Deploy to EKS
-        #   uses: Consensys/kubernetes-action@master
-        #   with:
-        #       args: get ns
+        # - uses: azure/k8s-deploy@v1
         #   env:
-        #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        #   with:
+        #     namespace: 'default'
+        #     manifests: |
+        #         k8s/namespace.yaml
+        #     images: '$ECR_REGISTRY/$ECR_REPOSITORY:latest'          
+        #     kubectl-version: 'latest'
+
+        - name: Deploy to EKS
+          uses: Consensys/kubernetes-action@master
+          with:
+              args: get ns
+          env:
+            KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
         # - name: Test Kubectl
         #   run: |
