@@ -33,7 +33,7 @@ jobs:
         - name: Deploy to EKS
           uses: Consensys/kubernetes-action@master
           with:
-              args: kubectl config current-context
+              args: config current-context
           env:
             KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
