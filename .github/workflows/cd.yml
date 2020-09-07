@@ -24,17 +24,24 @@ jobs:
         
 
 
-        - uses: azure/k8s-set-context@v1
-          with:
-            method: kubeconfig
-            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+        # - uses: azure/k8s-set-context@v1
+        #   with:
+        #     method: kubeconfig
+        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
         
-        - name: Test Kubectl
-          run: |
-            echo $KUBECONFIG
-            cat $KUBECONFIG
-            # kubectl get ns
+        - name: Deploy to EKS
+          uses: Consensys/kubernetes-action@master
+          with:
+              args: get ns
+          env:
+            KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+
+        # - name: Test Kubectl
+        #   run: |
+        #     echo $KUBECONFIG
+        #     cat $KUBECONFIG
+        #     # kubectl get ns
 
         # - name: Trigger deploy
         #   uses: Consensys/kubernetes-action@master
