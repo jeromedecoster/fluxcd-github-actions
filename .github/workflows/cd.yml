@@ -19,23 +19,37 @@ jobs:
             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
-            
-        # - uses: azure/setup-kubectl@v1
+          
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+
+        - uses: azure/setup-kubectl@v1
         
 
 
-        # - uses: azure/k8s-set-context@v1
-        #   with:
-        #     method: kubeconfig
-        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
-
-        
-        - name: Deploy to EKS
-          uses: Consensys/kubernetes-action@master
+        - uses: azure/k8s-set-context@v1
           with:
-              args: get ns
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+
+        
+        - uses: Azure/k8s-deploy@v1
           env:
-            KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          with:
+            namespace: 'default'
+            manifests: |
+                k8s/namespace.yaml
+            images: '$ECR_REGISTRY/$ECR_REPOSITORY:latest'          
+            kubectl-version: 'latest'
+
+        # - name: Deploy to EKS
+        #   uses: Consensys/kubernetes-action@master
+        #   with:
+        #       args: get ns
+        #   env:
+        #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
         # - name: Test Kubectl
         #   run: |
@@ -51,9 +65,7 @@ jobs:
         #     args: apply -f k8s/namespace.yaml
 
 
-        # - name: Login to Amazon ECR
-        #   id: login-ecr
-        #   uses: aws-actions/amazon-ecr-login@v1
+
 
         # - name: Build, tag, and push image to Amazon ECR
         #   id: build-image
