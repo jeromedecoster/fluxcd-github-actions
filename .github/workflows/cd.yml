@@ -31,14 +31,10 @@ jobs:
             method: kubeconfig
             kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
-        - name: kind
-          run: |
-            kind get kubeconfig-path
-            export KUBECONFIG="$(kind get kubeconfig-path)"
-
         - name: Test Kubectl
           run: |
-             export KUBECONFIG="$(kind get kubeconfig-path)"
+             echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig
+             export KUBECONFIG="kubeconfig
              kubectl get ns
              kubectl apply k8s/namespace.yaml
              kubectl get ns
