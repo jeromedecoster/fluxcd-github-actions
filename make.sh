@@ -5,7 +5,7 @@
 #
 
 # AWS variables
-AWS_PROFILE=jerome
+AWS_PROFILE=fluxcd-github-actions
 AWS_REGION=eu-west-3
 # project name
 PROJECT_NAME=fluxcd-github-actions
