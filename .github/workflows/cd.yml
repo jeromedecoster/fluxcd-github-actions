@@ -5,6 +5,7 @@ on: [push, pull_request]
 env: 
     ECR_REPOSITORY: "fluxcd-github-actions"
     AWS_REGION: eu-west-3
+    PROJECT_NAME: "fluxcd-github-actions"
 
 jobs:
     build:
@@ -29,6 +30,7 @@ jobs:
 
         - name: install kubectl
           run: |
+             pwd
              which curl
              VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
              curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
@@ -40,6 +42,8 @@ jobs:
              export KUBECONFIG=kubeconfig
              which kubectl
              kubectl --kubeconfig kubeconfig get ns
+             sed --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+               "k8s/namespace.yaml" | kubectl apply --filename - 
 
         # - uses: azure/setup-kubectl@v1
         

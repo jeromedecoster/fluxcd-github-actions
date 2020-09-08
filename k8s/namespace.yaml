@@ -1,5 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-    name: yili
-    #"{{PROJECT_NAME}}"
+    name: "{{PROJECT_NAME}}"
