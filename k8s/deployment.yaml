@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: website
-        image: "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/fluxcd-github-actions:latest"
+        image: "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/fluxcd-github-actions:${TAG}"
         ports:
         - containerPort: ${WEBSITE_PORT}
           name: website
