@@ -24,17 +24,17 @@ jobs:
         #   id: login-ecr
         #   uses: aws-actions/amazon-ecr-login@v1
 
-        - uses: azure/setup-kubectl@v1
+        # - uses: azure/setup-kubectl@v1
         
-        - uses: azure/k8s-set-context@v1
-          with:
-            method: kubeconfig
-            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+        # - uses: azure/k8s-set-context@v1
+        #   with:
+        #     method: kubeconfig
+        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
-        - name: Test Kubectl
+        - name: Test
           run: |
              printenv
-             kubectl get ns
+        #      kubectl get ns
 
         # - uses: azure/k8s-deploy@v1
         #   env:
