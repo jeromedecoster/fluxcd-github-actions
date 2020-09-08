@@ -50,6 +50,7 @@ jobs:
         - name: run make
           run: |
              pwd
+             ls -la
              echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
              export KUBECONFIG=kubeconfig
              export KUBECONFIG=kubeconfig
