@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: website
-  namespace: {{PROJECT_NAME}}
+  namespace: ${PROJECT_NAME}
   labels:
     app: website
 spec:
@@ -17,10 +17,10 @@ spec:
     spec:
       containers:
       - name: website
-        image: "{{ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/fluxcd-github-actions:latest"
+        image: "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/fluxcd-github-actions:latest"
         ports:
-        - containerPort: {{WEBSITE_PORT}}
+        - containerPort: ${WEBSITE_PORT}
           name: website
         env:
         - name: WEBSITE_PORT
-          value: "{{WEBSITE_PORT}}"
+          value: "${WEBSITE_PORT}"

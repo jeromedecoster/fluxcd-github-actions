@@ -50,6 +50,7 @@ jobs:
         - name: run make
           run: |
              pwd
+             which envsubst
              echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
              export KUBECONFIG=kubeconfig
              kubectl get ns
@@ -57,7 +58,8 @@ jobs:
              export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
              export AWS_REGION=${{ env.AWS_REGION }}
              export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
-             ./make.sh cluster-deploy
+             cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst | kubectl apply --filename -
+            #  ./make.sh cluster-deploy
             #  printenv
             #  kubectl get pods -n ${{ env.PROJECT_NAME }}
 
