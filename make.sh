@@ -220,24 +220,24 @@ cluster-create() { # create the EKS cluster
         --profile $AWS_PROFILE
 }
 
-# k8s-template() {
-#     source "$dir/.env"
-#     sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
-#         --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
-#         --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
-#         --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g" \
-#         --expression "s|{{AWS_REGION}}|$AWS_REGION|g" \
-#         --expression "s|{{WEBSITE_PORT}}|$WEBSITE_PORT|g" \
-#         $1
-# }
+k8s-template() {
+    source "$dir/.env"
+    sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
+        --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
+        --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+        --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g" \
+        --expression "s|{{AWS_REGION}}|$AWS_REGION|g" \
+        --expression "s|{{WEBSITE_PORT}}|$WEBSITE_PORT|g" \
+        $1
+}
 
-# cluster-deploy() { # deploy services to EKS
-#     cd "$dir/k8s"
-#     for f in namespace deployment service
-#     do
-#         k8s-template "$f.yaml" | kubectl apply --filename - 
-#     done
-# }
+cluster-deploy() { # deploy services to EKS
+    cd "$dir/k8s"
+    for f in namespace deployment service
+    do
+        k8s-template "$f.yaml" | kubectl apply --filename - 
+    done
+}
 
 cluster-elb() { # get the cluster ELB URI
     kubectl get svc \

@@ -5,7 +5,8 @@ on: [push, pull_request]
 env: 
     ECR_REPOSITORY: "fluxcd-github-actions"
     AWS_REGION: eu-west-3
-    PROJECT_NAME: "fluxcd-github-actions"
+    PROJECT_NAME: fluxcd-github-actions
+    WEBSITE_PORT: 3000
 
 jobs:
     build:
@@ -31,6 +32,7 @@ jobs:
         - name: install kubectl
           run: |
              pwd
+             echo $PATH
              which curl
              VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
              curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
@@ -41,9 +43,20 @@ jobs:
              echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
              export KUBECONFIG=kubeconfig
              which kubectl
-             kubectl --kubeconfig kubeconfig get ns
-             sed --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
-               "k8s/namespace.yaml" | kubectl apply --filename - 
+            #  kubectl --kubeconfig kubeconfig get ns
+            #  sed --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+            #    "k8s/namespace.yaml" | kubectl apply --filename - 
+
+        - name: run make
+          run: |
+             pwd
+             export KUBECONFIG=kubeconfig
+             export PROJECT_NAME=${{ PROJECT_NAME }}
+             export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
+             export AWS_REGION=${{ AWS_REGION }}
+             export WEBSITE_PORT=${{ WEBSITE_PORT }}
+             ./make.sh cluster-deploy
+             kubectl get pods -n ${{ PROJECT_NAME }}
 
         # - uses: azure/setup-kubectl@v1
         
