@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: website
-  namespace: {{PROJECT_NAME}}
-  labels:
-    app: website
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: website
-  template:
-    metadata:
-      labels:
+    name: website
+    namespace: "{{PROJECT_NAME}}"
+    labels:
         app: website
-    spec:
-      containers:
-      - name: website
-        image: "{{ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/website:latest"
-        ports:
-        - containerPort: {{WEBSITE_PORT}}
-          name: website
-        env:
-        - name: WEBSITE_PORT
-          value: {{WEBSITE_PORT}}
+spec:
+    replicas: 2
+    selector:
+        matchLabels:
+            app: website
+    template:
+        metadata:
+        labels:
+            app: website
+        spec:
+            containers:
+            - name: website
+              image: "{{ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/website:latest"
+              ports:
+              - containerPort: {{WEBSITE_PORT}}
+            name: website
+            env:
+            - name: WEBSITE_PORT
+              value: "{{WEBSITE_PORT}}"
