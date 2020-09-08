@@ -34,6 +34,7 @@ jobs:
         - name: Test
           run: |
              printenv
+             aws s3 ls | grep pho
         #      kubectl get ns
 
         # - uses: azure/k8s-deploy@v1
