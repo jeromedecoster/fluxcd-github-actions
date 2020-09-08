@@ -27,20 +27,35 @@ jobs:
         #   env:
         #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
-        - uses: azure/setup-kubectl@v1
-        
-        - uses: azure/k8s-set-context@v1
-          with:
-            method: kubeconfig
-            kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
-
-        - name: which kubectl
+        - name: install kubectl
           run: |
+             which curl
+             VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+             curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
+              --progress-bar \
+              --location \
+              --remote-name
+             chmod +x kubectl
+             ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
+             export KUBECONFIG=kubeconfig
              which kubectl
+             ./kubectl get ns
 
-        - name: config view
-          run: |
-             kubectl config view
+        # - uses: azure/setup-kubectl@v1
+        
+        # - uses: azure/k8s-set-context@v1
+        #   with:
+        #     method: kubeconfig
+        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+
+        # - name: which kubectl
+        #   run: |
+        #      which kubectl
+
+        # - name: config view
+        #   run: |
+        #      kubectl config view
+
 
         # - name: Login to Amazon ECR
         #   id: login-ecr
