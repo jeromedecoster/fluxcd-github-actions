@@ -51,12 +51,12 @@ jobs:
           run: |
              pwd
              export KUBECONFIG=kubeconfig
-             export PROJECT_NAME=${{ PROJECT_NAME }}
+             export PROJECT_NAME=${{ env.PROJECT_NAME }}
              export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
-             export AWS_REGION=${{ AWS_REGION }}
-             export WEBSITE_PORT=${{ WEBSITE_PORT }}
+             export AWS_REGION=${{ env.AWS_REGION }}
+             export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
              ./make.sh cluster-deploy
-             kubectl get pods -n ${{ PROJECT_NAME }}
+             kubectl get pods -n ${{ env.PROJECT_NAME }}
 
         # - uses: azure/setup-kubectl@v1
         
