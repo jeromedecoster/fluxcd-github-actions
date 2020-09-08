@@ -234,7 +234,7 @@ k8s-template() {
 cluster-deploy() { # deploy services to EKS
     #cd "$dir/k8s"
     #echo ":$KUBECONFIG:"
-    l#s -la
+    #ls -la
     for f in namespace deployment service
     do
         k8s-template "$dir/k8s/$f.yaml" | kubectl apply --filename - 
