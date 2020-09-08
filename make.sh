@@ -232,12 +232,12 @@ k8s-template() {
 }
 
 cluster-deploy() { # deploy services to EKS
-    cd "$dir/k8s"
-    echo ":$KUBECONFIG:"
-    ls -la
+    #cd "$dir/k8s"
+    #echo ":$KUBECONFIG:"
+    l#s -la
     for f in namespace deployment service
     do
-        k8s-template "$f.yaml" | kubectl apply --filename - 
+        k8s-template "$dir/k8s/$f.yaml" | kubectl apply --filename - 
     done
 }
 
