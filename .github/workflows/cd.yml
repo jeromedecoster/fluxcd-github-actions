@@ -77,6 +77,7 @@ jobs:
              export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
              export AWS_REGION=${{ env.AWS_REGION }}
              export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
+             cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst
              cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst | kubectl apply --filename -
             #  ./make.sh cluster-deploy
             #  printenv
