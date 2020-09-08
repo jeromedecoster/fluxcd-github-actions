@@ -221,7 +221,7 @@ cluster-create() { # create the EKS cluster
 }
 
 k8s-template() {
-    source "$dir/.env"
+    # source "$dir/.env"
     sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
         --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
         --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
@@ -235,7 +235,8 @@ cluster-deploy() { # deploy services to EKS
     cd "$dir/k8s"
     for f in namespace deployment service
     do
-        k8s-template "$f.yaml" | kubectl apply --filename - 
+        k8s-template "$f.yaml"
+        # | kubectl apply --filename - 
     done
 }
 
