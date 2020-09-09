@@ -3,137 +3,158 @@ name: cd
 on: [push, pull_request]
 
 env: 
-    ECR_REPOSITORY: "fluxcd-github-actions"
-    AWS_REGION: eu-west-3
-    PROJECT_NAME: fluxcd-github-actions
-    WEBSITE_PORT: 3000
+  ECR_REPOSITORY: "fluxcd-github-actions"
+  AWS_REGION: eu-west-3
+  PROJECT_NAME: fluxcd-github-actions
+  WEBSITE_PORT: 3000
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Clone
-          uses: actions/checkout@v2
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone
+      uses: actions/checkout@v2
 
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v1
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{ env.AWS_REGION }}
+    - name: Test
+      run: |
+        cd site
+        npm install
+        npm test
+
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    needs:
+      - run-tests
+
+    steps:
+    - name: Clone
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+      
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    # - name: Build, tag, and push image to Amazon ECR
+    #   id: build-image
+    #   env:
+    #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+    #     IMAGE_TAG: ${{ github.sha }}
+    #   run: |
+    #     cd site
+    #     docker image build \
+    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
+    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
+    #     .
+    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+    #     echo "::set-output name=image::${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+
+    # - name: install kubectl
+    #   run: |
+    #     pwd
+    #     echo $PATH
+    #     which curl
+    #     VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+    #     curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
+    #     --progress-bar \
+    #     --location \
+    #     --remote-name
+    #     chmod +x kubectl
+    #     echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
+    #     export KUBECONFIG=kubeconfig
+    #     which kubectl
+
+
+    # - name: run make
+    #   run: |
+    #     pwd
+    #     which envsubst
+    #     echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
+    #     export KUBECONFIG=kubeconfig
+    #     kubectl get ns
+    #     export PROJECT_NAME=${{ env.PROJECT_NAME }}
+    #     export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
+    #     export AWS_REGION=${{ env.AWS_REGION }}
+    #     export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
+    #     export TAG=${{ github.sha }}
+    #     cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst
+    #     cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst | kubectl apply --filename -
           
-        - name: Login to Amazon ECR
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v1
 
-        - name: Build, tag, and push image to Amazon ECR
-          id: build-image
-          env:
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-            IMAGE_TAG: ${{ github.sha }}
-          run: |
-            cd site
-            docker image build \
-            --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-            --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
-            .
-            docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-            docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-            echo "::set-output name=image::${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
 
-        # - name: Deploy to EKS
-        #   uses: Consensys/kubernetes-action@master
-        #   with:
-        #       args: get ns
-        #   env:
-        #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      #  kubectl --kubeconfig kubeconfig get ns
+      #  sed --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
+      #    "k8s/namespace.yaml" | kubectl apply --filename - 
 
-        - name: install kubectl
-          run: |
-             pwd
-             echo $PATH
-             which curl
-             VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-             curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
-              --progress-bar \
-              --location \
-              --remote-name
-             chmod +x kubectl
-             echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
-             export KUBECONFIG=kubeconfig
-             which kubectl
-            #  kubectl --kubeconfig kubeconfig get ns
-            #  sed --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
-            #    "k8s/namespace.yaml" | kubectl apply --filename - 
+      #  ./make.sh cluster-deploy
+      #  printenv
+      #  kubectl get pods -n ${{ env.PROJECT_NAME }}
 
-        - name: run make
-          run: |
-             pwd
-             which envsubst
-             echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
-             export KUBECONFIG=kubeconfig
-             kubectl get ns
-             export PROJECT_NAME=${{ env.PROJECT_NAME }}
-             export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
-             export AWS_REGION=${{ env.AWS_REGION }}
-             export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
-             export TAG=${{ github.sha }}
-             cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst
-             cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst | kubectl apply --filename -
-            #  ./make.sh cluster-deploy
-            #  printenv
-            #  kubectl get pods -n ${{ env.PROJECT_NAME }}
+      # - name: Deploy to EKS
+      #   uses: Consensys/kubernetes-action@master
+      #   with:
+      #       args: get ns
+      #   env:
+      #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
-        # - uses: azure/setup-kubectl@v1
-        
-        # - uses: azure/k8s-set-context@v1
-        #   with:
-        #     method: kubeconfig
-        #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+      # - uses: azure/setup-kubectl@v1
+      
+      # - uses: azure/k8s-set-context@v1
+      #   with:
+      #     method: kubeconfig
+      #     kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
 
-        # - name: which kubectl
-        #   run: |
-        #      which kubectl
+      # - name: which kubectl
+      #   run: |
+      #      which kubectl
 
-        # - name: config view
-        #   run: |
-        #      kubectl config view
+      # - name: config view
+      #   run: |
+      #      kubectl config view
 
 
 
 
-        
+      
 
-        # - name: Test
-        #   run: |
-        #      kubectl get ns
+      # - name: Test
+      #   run: |
+      #      kubectl get ns
 
-        # - uses: azure/k8s-deploy@v1
-        #   env:
-        #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        #   with:
-        #     namespace: 'default'
-        #     manifests: |
-        #         k8s/namespace.yaml
-        #     images: '$ECR_REGISTRY/$ECR_REPOSITORY:latest'          
-        #     kubectl-version: 'latest'
+      # - uses: azure/k8s-deploy@v1
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #   with:
+      #     namespace: 'default'
+      #     manifests: |
+      #         k8s/namespace.yaml
+      #     images: '$ECR_REGISTRY/$ECR_REPOSITORY:latest'          
+      #     kubectl-version: 'latest'
 
-        
+      
 
-        # - name: Test Kubectl
-        #   run: |
-        #     echo $KUBECONFIG
-        #     cat $KUBECONFIG
-        #     # kubectl get ns
+      # - name: Test Kubectl
+      #   run: |
+      #     echo $KUBECONFIG
+      #     cat $KUBECONFIG
+      #     # kubectl get ns
 
-        # - name: Trigger deploy
-        #   uses: Consensys/kubernetes-action@master
-        #   env:
-        #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-        #   with:
-        #     args: apply -f k8s/namespace.yaml
-
-
+      # - name: Trigger deploy
+      #   uses: Consensys/kubernetes-action@master
+      #   env:
+      #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      #   with:
+      #     args: apply -f k8s/namespace.yaml
 
 
-    
+
+
+  
