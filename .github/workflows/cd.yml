@@ -55,14 +55,14 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
         SHA=$(echo ${{ github.sha }} | cut -c 1-8)
-        echo $SHA
+        echo "SHA:$SHA"
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${ SHA } \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHA \
         .
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${ SHA }
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHA
 
     - name: Install and configure kubectl
       run: |
