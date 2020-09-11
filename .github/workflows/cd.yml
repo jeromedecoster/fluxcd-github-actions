@@ -16,23 +16,23 @@ env:
   # WEBSITE_PORT: 3000
 
 jobs:
-  run-tests:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Clone
-      uses: actions/checkout@v2
+  # run-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Clone
+  #     uses: actions/checkout@v2
 
-    - name: Test
-      run: |
-        cd site
-        npm install
-        npm test
+  #   - name: Test
+  #     run: |
+  #       cd site
+  #       npm install
+  #       npm test
 
   build:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    needs:
-      - run-tests
+    # if: github.ref == 'refs/heads/master'
+    # needs:
+    #   - run-tests
 
     steps:
     - name: Clone
@@ -54,15 +54,15 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        SHA=$(echo ${{ github.sha }} | cut -c 1-8)
-        echo "SHA:$SHA"
+        SHORT_SHA=$(echo ${{ GITHUB_SHA }} | cut -c 1-8)
+        echo "SHORT_SHA:$SHORT_SHA"
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHA \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA \
         .
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHA
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA
 
     - name: Install and configure kubectl
       run: |
@@ -77,11 +77,11 @@ jobs:
 
     - name: Deploy
       run: |
-        SHA=$(echo ${{ github.sha }} | cut -c 1-8)
+        SHORT_SHA=$(echo ${{ GITHUB_SHA }} | cut -c 1-8)
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
-        export IMAGE_TAG=${ SHA }
-        echo ${{ github.sha }}
-        echo ${ SHA }
+        export IMAGE_TAG=$SHORT_SHA
+        echo ${{ GITHUB_SHA }}
+        echo $SHORT_SHA
         export KUBECONFIG=kubeconfig.yaml
         envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
         cat k8s/kustomization.yaml
