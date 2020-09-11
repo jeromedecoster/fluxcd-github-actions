@@ -54,7 +54,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        SHA=${GITHUB_SHA:0:7}
+        SHA=${GITHUB_SHA:7}
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
@@ -76,7 +76,7 @@ jobs:
 
     - name: Deploy
       run: |
-        SHA=${GITHUB_SHA:0:7}
+        SHA=${GITHUB_SHA:7}
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
         export IMAGE_TAG=${SHA}
         echo ${{ GITHUB_SHA }}
