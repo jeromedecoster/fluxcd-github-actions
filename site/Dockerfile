@@ -1,11 +1,14 @@
+FROM softonic/node-prune AS prune
+
 FROM node:14.9-slim AS build
+ENV NODE_ENV production
 WORKDIR /app
-ADD package.json .
+COPY --from=prune /go/bin/node-prune /usr/local/bin/
+ADD . .
 RUN npm install
 
 FROM node:14.9-slim
 ENV NODE_ENV production
-ENV WEBSITE_PORT 3000
 WORKDIR /app
 COPY --from=build /app .
 ADD . .

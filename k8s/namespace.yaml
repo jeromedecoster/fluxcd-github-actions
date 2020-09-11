@@ -2,4 +2,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-    name: ${PROJECT_NAME}
+    name: kubernetes-github-actions

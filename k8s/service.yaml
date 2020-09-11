@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
     name: website
-    namespace: ${PROJECT_NAME}
+    namespace: kubernetes-github-actions
     labels:
         app: website
 spec:
@@ -13,4 +13,4 @@ spec:
     ports:
     - port: 80
       protocol: TCP  
-      targetPort: ${WEBSITE_PORT}
+      targetPort: 3000

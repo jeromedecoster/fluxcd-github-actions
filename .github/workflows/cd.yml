@@ -1,12 +1,18 @@
 name: cd
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 env: 
-  ECR_REPOSITORY: "fluxcd-github-actions"
   AWS_REGION: eu-west-3
-  PROJECT_NAME: fluxcd-github-actions
-  WEBSITE_PORT: 3000
+  ECR_REPOSITORY: kubernetes-github-actions
+  # PROJECT_NAME: kubernetes-github-actions
+  # WEBSITE_PORT: 3000
 
 jobs:
   run-tests:
@@ -38,40 +44,45 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
       
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+    # - name: Login to Amazon ECR
+    #   id: login-ecr
+    #   uses: aws-actions/amazon-ecr-login@v1
 
     # - name: Build, tag, and push image to Amazon ECR
     #   id: build-image
     #   env:
     #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-    #     IMAGE_TAG: ${{ github.sha }}
+    #     TAG: ${{ github.sha::7 }}
     #   run: |
     #     cd site
     #     docker image build \
     #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
+    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }} \
     #     .
     #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-    #     echo "::set-output name=image::${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
 
-    # - name: install kubectl
-    #   run: |
+
+    - name: Install and configure kubectl
+      run: |
+        VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+        curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
+          --progress-bar \
+          --location \
+          --remote-name
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+        echo ${{ secrets.KUBECONFIG }} | base64 --decode > kubeconfig.yaml
+        kubectl --kubeconfig kubeconfig.yaml get ns
+        
     #     pwd
     #     echo $PATH
     #     which curl
-    #     VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-    #     curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
-    #     --progress-bar \
-    #     --location \
-    #     --remote-name
-    #     chmod +x kubectl
     #     echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > kubeconfig
     #     export KUBECONFIG=kubeconfig
     #     which kubectl
 
+    #     echo "::set-output name=image::${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}:${{ env.TAG }}"
 
     # - name: run make
     #   run: |
@@ -84,7 +95,7 @@ jobs:
     #     export ACCOUNT_ID=${{ secrets.ACCOUNT_ID }}
     #     export AWS_REGION=${{ env.AWS_REGION }}
     #     export WEBSITE_PORT=${{ env.WEBSITE_PORT }}
-    #     export TAG=${{ github.sha }}
+    #     export TAG=${{ github.sha::7 }}
     #     cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst
     #     cat k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml | envsubst | kubectl apply --filename -
           

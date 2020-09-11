@@ -1,15 +1,11 @@
 #!/bin/bash
 
-#
-# variables
-#
-
 # AWS variables
-AWS_PROFILE=fluxcd-github-actions
+AWS_PROFILE=default
 AWS_REGION=eu-west-3
-# project name
-PROJECT_NAME=fluxcd-github-actions
-
+# project variables
+PROJECT_NAME=kubernetes-github-actions
+WEBSITE_PORT=3000
 
 # the directory containing the script file
 dir="$(cd "$(dirname "$0")"; pwd)"
@@ -33,24 +29,6 @@ usage() {
       or invoke this file directly: ./make.sh dev'
 }
 
-# install fluxctl if missing (no update)
-install-fluxctl() {
-    if [[ -z $(which fluxctl) ]]
-    then
-        log install fluxctl
-        warn warn sudo is required
-        cd /usr/local/bin
-        sudo wget -q -O - https://api.github.com/repos/fluxcd/flux/releases \
-            | jq --raw-output 'map( select(.prerelease==false) | .assets[].browser_download_url ) | .[]' \
-            | grep inux \
-            | head -n 1 \
-            | sudo wget -q --show-progress -i - -O fluxctl
-        sudo chmod +x fluxctl
-    else
-        log skip fluxctl already installed
-    fi
-}
-
 # install eksctl if missing (no update)
 install-eksctl() {
     if [[ -z $(which eksctl) ]]
@@ -72,13 +50,34 @@ install-eksctl() {
     fi
 }
 
+# install yq if missing (no update)
+install-yq() {
+    if [[ -z $(which yq) ]]
+    then
+        log install yq
+        warn warn sudo is required
+        cd /usr/local/bin
+        local URL=$(wget -q -O - https://api.github.com/repos/mikefarah/yq/releases \
+            | jq --raw-output 'map( select(.prerelease==false) | .assets[].browser_download_url ) | .[]' \
+            | grep linux_amd64 \
+            | head -n 1)
+        sudo curl "$URL" \
+            --progress-bar \
+            --location \
+            --output yq
+        sudo chmod +x yq
+    else
+        log skip yq already installed
+    fi
+}
+
 # install kubectl if missing (no update)
 install-kubectl() {
     if [[ -z $(which kubectl) ]]
     then
         log install eksctl
         warn warn sudo is required
-        VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+        local VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
         cd /usr/local/bin
         sudo curl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl \
             --progress-bar \
@@ -125,17 +124,17 @@ create-env() {
         --profile $AWS_PROFILE \
         2>/dev/null)
 
-    AWS_ACCESS_KEY_ID=$(echo "$key" | jq '.AccessKeyId' --raw-output)
+    local AWS_ACCESS_KEY_ID=$(echo "$key" | jq '.AccessKeyId' --raw-output)
     log AWS_ACCESS_KEY_ID $AWS_ACCESS_KEY_ID
     
-    AWS_SECRET_ACCESS_KEY=$(echo "$key" | jq '.SecretAccessKey' --raw-output)
+    local AWS_SECRET_ACCESS_KEY=$(echo "$key" | jq '.SecretAccessKey' --raw-output)
     log AWS_SECRET_ACCESS_KEY $AWS_SECRET_ACCESS_KEY
 
     # root account id
-    ACCOUNT_ID=$(aws sts get-caller-identity \
-        --query 'Account' \
-        --profile $AWS_PROFILE \
-        --output text)
+    # local ACCOUNT_ID=$(aws sts get-caller-identity \
+    #     --query 'Account' \
+    #     --profile $AWS_PROFILE \
+    #     --output text)
 
     # create ECR repository
     local repo=$(aws ecr describe-repositories \
@@ -146,7 +145,7 @@ create-env() {
     if [[ -z "$repo" ]]
     then
         log ecr create-repository $PROJECT_NAME
-        ECR_REPOSITORY=$(aws ecr create-repository \
+        local ECR_REPOSITORY=$(aws ecr create-repository \
             --repository-name $PROJECT_NAME \
             --region $AWS_REGION \
             --profile $AWS_PROFILE \
@@ -155,30 +154,42 @@ create-env() {
         log ECR_REPOSITORY $ECR_REPOSITORY
     fi
 
+    # envsubst tips : https://unix.stackexchange.com/a/294400
     # create .env file
-    sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|" \
-        --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|" \
-        --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|" \
-        --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|" \
-        --expression "s|{{ECR_REPOSITORY}}|$ECR_REPOSITORY|" \
-        .env.sample \
-        > .env
+    cd "$dir"
+    # export variables for envsubst
+    export AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY
+    export ECR_REPOSITORY
+    envsubst < .env.tmpl > .env
 
     info created file .env
 }
 
-# install eksctl + kubectl, create aws user + s3 bucket
+# install eksctl + kubectl + yq, create aws user + ecr repository
 setup() {
-    install-fluxctl
     install-eksctl
     install-kubectl
+    install-yq
     create-env
 }
 
-# build the production image
+# local development (by calling npm script directly)
+dev() {
+    cd "$dir/site"
+    npm run-script dev
+}
+
+# run tests (by calling npm script directly)
+test() { 
+    cd "$dir/site"
+    npm test
+}
+
+# build the production image locally
 build() {
     cd "$dir/site"
-    VERSION=$(jq --raw-output '.version' package.json)
+    local VERSION=$(jq --raw-output '.version' package.json)
     log build $PROJECT_NAME:$VERSION
     docker image build \
         --tag $PROJECT_NAME:latest \
@@ -190,15 +201,24 @@ build() {
 run() {
     [[ -n $(docker ps --format '{{.Names}}' | grep $PROJECT_NAME) ]] \
         && { error error container already exists; return; }
-    log run $PROJECT_NAME on http://localhost:3000
+    log run $PROJECT_NAME on http://localhost:80
     docker run \
         --detach \
         --name $PROJECT_NAME \
-        --publish 3000:3000 \
+        --publish 80:$WEBSITE_PORT \
         $PROJECT_NAME
 }
 
-cluster-create() { # create the EKS cluster
+# remove the running container
+rm() {
+    [[ -z $(docker ps --format '{{.Names}}' | grep $PROJECT_NAME) ]]  \
+        && { warn warn no running container found; return; }
+    docker container rm \
+        --force $PROJECT_NAME
+}
+
+# create the EKS cluster
+cluster-create() {
     # check if cluster already exists (return something if the cluster exists, otherwise return nothing)
     local exists=$(aws eks describe-cluster \
         --name $PROJECT_NAME \
@@ -220,47 +240,27 @@ cluster-create() { # create the EKS cluster
         --profile $AWS_PROFILE
 }
 
-k8s-template() {
-    # source "$dir/.env"
-    sed --expression "s|{{AWS_ACCESS_KEY_ID}}|$AWS_ACCESS_KEY_ID|g" \
-        --expression "s|{{AWS_SECRET_ACCESS_KEY}}|$AWS_SECRET_ACCESS_KEY|g" \
-        --expression "s|{{PROJECT_NAME}}|$PROJECT_NAME|g" \
-        --expression "s|{{ACCOUNT_ID}}|$ACCOUNT_ID|g" \
-        --expression "s|{{AWS_REGION}}|$AWS_REGION|g" \
-        --expression "s|{{WEBSITE_PORT}}|$WEBSITE_PORT|g" \
-        $1
-}
+# deploy services to EKS
+# cluster-deploy() {
+#     cat k8s/* | envsubst | kubectl apply --filename -
+# }
 
-cluster-deploy() { # deploy services to EKS
-    #cd "$dir/k8s"
-    #echo ":$KUBECONFIG:"
-    #ls -la
-    for f in namespace deployment service
-    do
-        k8s-template "$dir/k8s/$f.yaml" | kubectl apply --filename - 
-    done
-}
-
-cluster-elb() { # get the cluster ELB URI
+# get the cluster ELB URI
+cluster-elb() {
     kubectl get svc \
         --namespace $PROJECT_NAME \
         --output jsonpath="{.items[?(@.metadata.name=='website')].status.loadBalancer.ingress[].hostname}"
 }
 
-cluster-delete() { # delete the EKS cluster
+# delete the EKS cluster
+cluster-delete() {
     eksctl delete cluster \
         --name $PROJECT_NAME \
         --region $AWS_REGION \
         --profile $AWS_PROFILE
 }
 
-# remove the running container
-rm() {
-    [[ -z $(docker ps --format '{{.Names}}' | grep $PROJECT_NAME) ]]  \
-        && { warn warn no running container found; return; }
-    docker container rm \
-        --force $PROJECT_NAME
-}
+
 
 # if `$1` is a function, execute it. Otherwise, print usage
 # compgen -A 'function' list all declared functions

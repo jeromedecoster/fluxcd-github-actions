@@ -1,0 +1,8 @@
+resources:
+- deployment.yaml
+- namespace.yaml
+- service.yaml
+
+images:
+- name: jeromedecoster/duck
+  newTag: ${TAG}

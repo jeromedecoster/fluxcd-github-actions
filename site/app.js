@@ -17,4 +17,8 @@ app.get('/', async (req, res) => {
     res.render('index')
 })
 
+app.get('/healthcheck', (req, res) => {
+    res.json({ uptime: process.uptime() })
+})
+
 module.exports = app
