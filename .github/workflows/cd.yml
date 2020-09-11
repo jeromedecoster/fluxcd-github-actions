@@ -36,11 +36,6 @@ jobs:
     - name: Clone
       uses: actions/checkout@v2
 
-    - name: test
-      run: |
-        echo ${{ env.TAG }}
-        exit 1
-
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
