@@ -11,9 +11,7 @@ on:
 env: 
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: kubernetes-github-actions
-  TAG: $(echo ${{ github.sha }} | cut -c 1-8)
-  # PROJECT_NAME: kubernetes-github-actions
-  # WEBSITE_PORT: 3000
+  SHORT_SHA: $(echo ${{ github.sha }} | cut -c 1-8)
 
 jobs:
   # run-tests:
@@ -59,15 +57,13 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-8)
-        echo "SHORT_SHA:$SHORT_SHA"
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.SHORT_SHA }} \
         .
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.SHORT_SHA }}
 
     - name: Install and configure kubectl
       run: |
@@ -81,12 +77,13 @@ jobs:
         echo ${{ secrets.KUBECONFIG }} | base64 --decode > kubeconfig.yaml
 
     - name: Deploy
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-8)
-        export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
+        export ECR_REPOSITORY=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
         export IMAGE_TAG=$SHORT_SHA
         echo ${{ github.sha }}
-        echo $SHORT_SHA
+        echo ${{ env.SHORT_SHA }}
         export KUBECONFIG=kubeconfig.yaml
         envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
         cat k8s/kustomization.yaml
