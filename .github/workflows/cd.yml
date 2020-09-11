@@ -54,7 +54,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        SHA=$(echo ${{ GITHUB_SHA }} | cut -c 1-8)
+        SHA=$(echo ${{ github.sha }} | cut -c 1-8)
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
@@ -76,10 +76,10 @@ jobs:
 
     - name: Deploy
       run: |
-        SHA=$(echo ${{ GITHUB_SHA }} | cut -c 1-8)
+        SHA=$(echo ${{ github.sha }} | cut -c 1-8)
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
         export IMAGE_TAG=${{ SHA }}
-        echo ${{ GITHUB_SHA }}
+        echo ${{ github.sha }}
         echo ${{ SHA }}
         export KUBECONFIG=kubeconfig.yaml
         envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
