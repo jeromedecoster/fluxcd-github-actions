@@ -11,6 +11,7 @@ on:
 env: 
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: kubernetes-github-actions
+  TAG: ${{ github.sha::7 }}
   # PROJECT_NAME: kubernetes-github-actions
   # WEBSITE_PORT: 3000
 
@@ -44,24 +45,22 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
       
-    # - name: Login to Amazon ECR
-    #   id: login-ecr
-    #   uses: aws-actions/amazon-ecr-login@v1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-    # - name: Build, tag, and push image to Amazon ECR
-    #   id: build-image
-    #   env:
-    #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-    #     TAG: ${{ github.sha::7 }}
-    #   run: |
-    #     cd site
-    #     docker image build \
-    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-    #     --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }} \
-    #     .
-    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-    #     docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
-
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        cd site
+        docker image build \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }} \
+        .
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
 
     - name: Install and configure kubectl
       run: |
@@ -73,7 +72,15 @@ jobs:
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/
         echo ${{ secrets.KUBECONFIG }} | base64 --decode > kubeconfig.yaml
-        kubectl --kubeconfig kubeconfig.yaml get ns
+
+    - name: Deploy
+      run: |
+        export TAG=${{ env.TAG }}
+        export KUBECONFIG=kubeconfig.yaml
+        envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
+        cat k8s/kustomization.yaml
+        kubectl kustomize k8s
+        kubectl kustomize k8s | kubectl apply -f -
         
     #     pwd
     #     echo $PATH

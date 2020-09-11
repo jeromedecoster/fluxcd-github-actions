@@ -4,5 +4,5 @@ resources:
 - service.yaml
 
 images:
-- name: jeromedecoster/duck
+- name: amazonaws.com/kubernetes-github-actions
   newTag: ${TAG}
