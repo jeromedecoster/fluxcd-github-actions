@@ -79,9 +79,9 @@ jobs:
       run: |
         SHA=$(echo ${{ github.sha }} | cut -c 1-8)
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
-        export IMAGE_TAG=${{ SHA }}
+        export IMAGE_TAG=${ SHA }
         echo ${{ github.sha }}
-        echo ${{ SHA }}
+        echo ${ SHA }
         export KUBECONFIG=kubeconfig.yaml
         envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
         cat k8s/kustomization.yaml
