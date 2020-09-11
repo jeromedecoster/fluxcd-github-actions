@@ -57,10 +57,10 @@ jobs:
         cd site
         docker image build \
         --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
-        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ GITHUB_SHA::8 }} \
+        --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ GITHUB_SHA:0:8 }} \
         .
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ GITHUB_SHA::8 }}
+        docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ GITHUB_SHA:0:8 }}
 
     - name: Install and configure kubectl
       run: |
@@ -76,9 +76,9 @@ jobs:
     - name: Deploy
       run: |
         export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
-        export IMAGE_TAG=${{ GITHUB_SHA::8 }}
+        export IMAGE_TAG=${{ GITHUB_SHA:0:8 }}
         echo ${{ GITHUB_SHA }}
-        echo ${{ GITHUB_SHA::8 }}
+        echo ${{ GITHUB_SHA:0:8 }}
         export KUBECONFIG=kubeconfig.yaml
         envsubst < k8s/kustomization.tmpl.yaml > k8s/kustomization.yaml
         cat k8s/kustomization.yaml
