@@ -11,7 +11,7 @@ on:
 env: 
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: kubernetes-github-actions
-  # TAG: ${{ github.sha }}
+  TAG: $(echo ${{ github.sha }} | cut -c 1-8)
   # PROJECT_NAME: kubernetes-github-actions
   # WEBSITE_PORT: 3000
 
@@ -37,6 +37,11 @@ jobs:
     steps:
     - name: Clone
       uses: actions/checkout@v2
+
+    - name: test
+      run: |
+        echo ${{ env.TAG }}
+        exit 1
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1

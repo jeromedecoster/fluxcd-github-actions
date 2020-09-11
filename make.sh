@@ -245,7 +245,7 @@ cluster-create() {
 #     cat k8s/* | envsubst | kubectl apply --filename -
 # }
 
-# get the cluster ELB URI
+# get the cluster ELB URL
 cluster-elb() {
     kubectl get svc \
         --namespace $PROJECT_NAME \

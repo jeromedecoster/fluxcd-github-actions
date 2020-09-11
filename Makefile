@@ -25,5 +25,8 @@ rm: # remove the running container
 cluster-create: # create the EKS cluster
 	./make.sh cluster-create
 
+cluster-elb: # get the cluster ELB URL
+	./make.sh cluster-elb
+
 cluster-delete: # delete the EKS cluster
 	./make.sh cluster-delete
