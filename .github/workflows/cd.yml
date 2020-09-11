@@ -11,7 +11,7 @@ on:
 env: 
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: kubernetes-github-actions
-  TAG: ${{ GITHUB_SHA }}
+  TAG: ${{ github.sha }}
   # PROJECT_NAME: kubernetes-github-actions
   # WEBSITE_PORT: 3000
 
